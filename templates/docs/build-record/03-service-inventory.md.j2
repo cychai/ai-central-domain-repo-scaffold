@@ -1,0 +1,7 @@
+# 服务清单
+
+| 服务 | 仓库 | 挂载 | 访问 | 验证 |
+| --- | --- | --- | --- | --- |
+{% for service in services -%}
+| {{ service.name }} | `{{ service.repository }}` | `{{ service.mount_path }}` | `{{ service.access }}` | {% for cmd in service.verification %}`{{ cmd }}`{% if not loop.last %}<br>{% endif %}{% endfor %} (`not-executed`) |
+{% endfor %}

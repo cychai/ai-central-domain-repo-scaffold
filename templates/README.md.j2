@@ -1,0 +1,19 @@
+# {{ domain.name }}中央领域仓
+
+{{ domain.description }}。
+
+## 快速开始
+
+```bash
+make verify
+make dev-create BRANCH=feat/example
+# 进入输出的需求 worktree 后
+make dev-repo-init SERVICES={{ services[0].id }}
+```
+
+## 边界
+
+- 中央仓保存稳定事实、服务映射、规格和门禁。
+- 服务代码保留在各自 Git 仓库，通过 `services/` 按需挂载。
+- 服务清单以 `domain.yaml` 为唯一机器可读来源。
+- 首次阅读 `AGENTS.md`，再按 `docs/AGENTS.md` 加载专题。

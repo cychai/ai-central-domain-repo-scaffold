@@ -1,0 +1,30 @@
+# {{ domain.name }}中央领域仓 Agent 指南
+
+## 仓库定位
+
+本仓是 `{{ domain.repository }}`，负责{{ domain.description }}。业务代码位于 `services/` 下的独立 Git 工作区；本仓只提交稳定知识、规格、配置和工作流。
+
+## 服务边界
+
+| 服务 | 挂载路径 | 权限 | 规则 |
+| --- | --- | --- | --- |
+{% for service in services -%}
+| {{ service.name }} (`{{ service.id }}`) | `{{ service.mount_path }}` | {{ "可修改" if service.access == "read-write" else "只读" }} | {{ "进入服务仓后遵循其 AGENTS.md。" if service.access == "read-write" else "只用于取证和验证，禁止修改。" }} |
+{% endfor %}
+
+## 强制规则
+
+- 默认分支只维护中央仓基线；需求实现先运行 `make dev-create BRANCH=<branch>`。
+- 服务范围明确后再在需求 worktree 中运行 `make dev-repo-init SERVICES=<id,...>`。
+- `read-only` 服务禁止修改；`read-write` 服务仍须遵循服务仓自己的 `AGENTS.md`。
+- 不复制日志、Trace、凭据或配置正文；保留来源、状态和验证路径。
+- 未运行的检查标记为 `not-executed`，不得写成 `passed`。
+
+## 稳定入口
+
+- 文档路由：`docs/AGENTS.md`
+- 多仓边界：`docs/agents/multi-repo.md`
+- 工作流：`docs/agents/workflows.md`
+- 测试规则：`docs/agents/testing.md`
+- 服务挂载：`docs/references/service-worktree-guide.md`
+- 验证：`make verify`

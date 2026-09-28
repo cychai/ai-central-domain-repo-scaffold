@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "central-domain-repo-scaffold"
+version = "0.1.0"
+description = "中央领域仓通用生成器"
+requires-python = ">=3.11"
+dependencies = ["Jinja2>=3.1,<4", "jsonschema>=4.17,<5", "PyYAML>=6,<7"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

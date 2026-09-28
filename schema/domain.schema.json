@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "domain", "services", "worktree"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "domain": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "slug", "repository", "description", "default_branch"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1}, "slug": {"type": "string", "minLength": 1},
+        "repository": {"type": "string", "minLength": 1}, "description": {"type": "string", "minLength": 1},
+        "default_branch": {"type": "string", "minLength": 1}
+      }
+    },
+    "services": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "name", "repository", "source", "mount_path", "default_branch", "access", "fetch_mode", "verification"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1}, "name": {"type": "string", "minLength": 1},
+          "repository": {"type": "string", "minLength": 1}, "source": {"type": "string", "minLength": 1},
+          "mount_path": {"type": "string", "minLength": 1}, "local_path": {"type": "string", "minLength": 1},
+          "default_branch": {"type": "string", "minLength": 1},
+          "access": {"enum": ["read-write", "read-only"]},
+          "fetch_mode": {"enum": ["worktree", "symlink", "copy"]},
+          "verification": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "worktree": {
+      "type": "object", "additionalProperties": false, "required": ["root", "directory_template"],
+      "properties": {"root": {"type": "string", "minLength": 1}, "directory_template": {"type": "string", "minLength": 1}}
+    }
+  }
+}

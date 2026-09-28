@@ -1,0 +1,3 @@
+# Worktree 策略
+
+中央仓需求使用 Git worktree；服务挂载模式由 `domain.yaml` 明确声明。`worktree` 缺少 committed HEAD 时失败，不自动切换为 `symlink` 或 `copy`。

@@ -1,0 +1,7 @@
+# 生成文件
+
+以下文件由脚手架生成，并由 `make verify` 校验。服务挂载和本地状态不进入版本控制。
+
+{% for relative in generated_files -%}
+- `{{ relative }}`
+{% endfor %}

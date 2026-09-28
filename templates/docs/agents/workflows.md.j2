@@ -1,0 +1,8 @@
+# 需求开发工作流
+
+1. 在默认分支确认需求和证据。
+2. `make dev-create BRANCH=<branch>` 创建需求级中央仓 worktree。
+3. 在需求 worktree 中确定目标服务和只读依赖。
+4. `make dev-repo-init SERVICES=<id,...>` 按需挂载。
+5. 在各服务仓独立实现、验证和提交。
+6. 中央仓只提交规格、知识和工作流变化。

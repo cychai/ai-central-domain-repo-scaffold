@@ -1,0 +1,21 @@
+SHELL := /bin/sh
+BRANCH_ARG := $(or $(BRANCH),$(branch))
+SERVICES_ARG := $(or $(SERVICES),$(services))
+
+.PHONY: help verify dev-create dev-repo-init dev-status dev-remove
+help:
+	@printf '%s\n' 'make verify' 'make dev-create BRANCH=feat/example' 'make dev-repo-init SERVICES=all' 'make dev-status' 'make dev-remove BRANCH=feat/example'
+verify:
+	@python3 scripts/verify-central.py --require-git
+
+dev-create:
+	@python3 scripts/dev-worktree.py create "$(BRANCH_ARG)"
+
+dev-repo-init:
+	@python3 scripts/dev-worktree.py init --services "$(SERVICES_ARG)"
+
+dev-status:
+	@python3 scripts/dev-worktree.py status
+
+dev-remove:
+	@python3 scripts/dev-worktree.py remove "$(BRANCH_ARG)"

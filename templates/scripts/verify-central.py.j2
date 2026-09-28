@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, json, subprocess, sys
+from pathlib import Path
+
+REQUIRED=("AGENTS.md","README.md","Makefile","domain.yaml","docs/AGENTS.md","docs/agents/architecture.md","docs/agents/multi-repo.md","docs/agents/testing.md","docs/agents/workflows.md","docs/build-record/08-verification-report.md","scripts/dev-worktree.py","scripts/verify-central.py","specs/README.md")
+def main():
+    parser=argparse.ArgumentParser(); parser.add_argument("--require-git",action="store_true"); args=parser.parse_args()
+    root=Path(__file__).resolve().parents[1]; errors=[]
+    for rel in REQUIRED:
+        if not (root/rel).exists(): errors.append(f"缺少：{rel}")
+    try: data=json.loads((root/"domain.yaml").read_text(encoding="utf-8"))
+    except Exception as exc: errors.append(f"domain.yaml 无法读取：{exc}"); data={}
+    for service in data.get("services",[]):
+        mount=service.get("mount_path","")
+        if not mount.startswith("services/") or ".." in Path(mount).parts: errors.append(f"不安全挂载路径：{mount}")
+    if args.require_git:
+        result=subprocess.run(["git","-C",str(root),"rev-parse","--verify","HEAD"],capture_output=True)
+        if result.returncode: errors.append("缺少 committed HEAD")
+    if errors:
+        print("\n".join(errors),file=sys.stderr); return 1
+    print("中央仓校验通过"); return 0
+if __name__=="__main__": raise SystemExit(main())

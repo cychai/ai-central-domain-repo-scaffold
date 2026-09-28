@@ -1,0 +1,48 @@
+schema_version: 1
+
+domain:
+  name: 订单履约
+  slug: order-fulfillment
+  repository: order-fulfillment-central-domain
+  description: 统一维护订单履约领域的稳定知识、多仓边界和研发工作流
+  default_branch: main
+
+services:
+  - id: order-api
+    name: 订单接入服务
+    repository: example/order-api
+    source: git@code.example.com:example/order-api.git
+    mount_path: services/example/order-api
+    local_path: ~/workspace/example/order-api
+    default_branch: main
+    access: read-write
+    fetch_mode: worktree
+    verification:
+      - go test ./...
+      - go vet ./...
+  - id: inventory-query
+    name: 库存查询服务
+    repository: example/inventory-query
+    source: git@code.example.com:example/inventory-query.git
+    mount_path: services/example/inventory-query
+    local_path: ~/workspace/example/inventory-query
+    default_branch: main
+    access: read-only
+    fetch_mode: symlink
+    verification:
+      - go test ./...
+  - id: billing-ledger
+    name: 账务流水服务
+    repository: example/billing-ledger
+    source: git@code.example.com:example/billing-ledger.git
+    mount_path: services/example/billing-ledger
+    local_path: ~/workspace/example/billing-ledger
+    default_branch: main
+    access: read-only
+    fetch_mode: copy
+    verification:
+      - python3 -m unittest
+
+worktree:
+  root: .dev-worktrees
+  directory_template: "{repository}__{branch_slug}"

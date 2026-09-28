@@ -1,0 +1,9 @@
+# 多仓边界
+
+| ID | 仓库 | 挂载路径 | 访问 | 模式 |
+| --- | --- | --- | --- | --- |
+{% for service in services -%}
+| `{{ service.id }}` | `{{ service.repository }}` | `{{ service.mount_path }}` | `{{ service.access }}` | `{{ service.fetch_mode }}` |
+{% endfor %}
+
+`read-only` 只用于取证和验证；`read-write` 才可成为代码修改目标。

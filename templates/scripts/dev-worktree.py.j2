@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import argparse, json, os, re, shutil, subprocess, sys
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parents[1]
+SAFE_BRANCH=re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+def fail(message): print(message,file=sys.stderr); raise SystemExit(1)
+def run(*args,cwd=None,check=True):
+    result=subprocess.run(list(args),cwd=cwd,text=True,capture_output=True)
+    if check and result.returncode: fail(result.stderr.strip() or f"命令失败：{' '.join(args)}")
+    return result
+def config(): return json.loads((ROOT/"domain.yaml").read_text(encoding="utf-8"))
+def env_key(service): return "CENTRAL_SERVICE_"+re.sub(r"[^A-Za-z0-9]","_",service["id"]).upper()+"_PATH"
+def source_path(service):
+    value=os.environ.get(env_key(service))
+    if not value: fail(f"未配置服务仓本地路径：请设置 {env_key(service)}")
+    path=Path(value).expanduser().resolve()
+    if not path.is_dir(): fail(f"服务仓不存在：{path}")
+    return path
+def select(services,selector):
+    if selector=="all": return services
+    if not selector: fail("必须通过 --services 指定服务")
+    result=[]
+    for token in selector.split(","):
+        token=token.strip(); matches=[s for s in services if token in (s["id"],s["mount_path"])]
+        if len(matches)!=1: fail(f"服务选择器无法唯一解析：{token}")
+        if matches[0] not in result: result.append(matches[0])
+    return result
+def branch_slug(branch): return re.sub(r"[^A-Za-z0-9._-]+","-",branch).strip("-")
+def worktree_path(data,branch):
+    base=Path(data["worktree"]["root"]).expanduser(); base=base if base.is_absolute() else ROOT/base
+    name=data["worktree"]["directory_template"].format(repository=data["domain"]["repository"],branch_slug=branch_slug(branch))
+    return (base/name).resolve()
+def create(branch):
+    if not branch or not SAFE_BRANCH.fullmatch(branch) or ".." in branch: fail("分支名不安全或为空")
+    if run("git","-C",str(ROOT),"rev-parse","--verify","HEAD",check=False).returncode: fail("中央仓缺少 committed HEAD")
+    data=config(); target=worktree_path(data,branch)
+    if target.exists(): fail(f"需求 worktree 已存在：{target}")
+    target.parent.mkdir(parents=True,exist_ok=True)
+    result=run("git","-C",str(ROOT),"worktree","add","-b",branch,str(target),check=False)
+    if result.returncode:
+        # A branch may remain after an interrupted create; never force-delete it.
+        fail(result.stderr.strip())
+    (target/".dev-worktree-state.json").write_text(json.dumps({"branch":branch},ensure_ascii=False),encoding="utf-8")
+    print(target)
+def remove(branch):
+    data=config(); target=worktree_path(data,branch)
+    if not target.exists(): fail(f"需求 worktree 不存在：{target}")
+    run("git","-C",str(ROOT),"worktree","remove",str(target)); print(f"已移除：{target}")
+def init_services(selector):
+    data=config()
+    current_branch=run("git","-C",str(ROOT),"branch","--show-current").stdout.strip()
+    if not current_branch: fail("当前中央仓处于 detached HEAD，禁止初始化服务仓")
+    if current_branch==data["domain"]["default_branch"]:
+        fail("禁止在中央仓默认分支初始化服务仓；请先创建并进入需求 worktree")
+    chosen=select(data["services"],selector); plans=[]
+    for service in chosen:
+        source=source_path(service); target=(ROOT/service["mount_path"]).resolve()
+        if ROOT not in target.parents: fail(f"挂载路径逃逸：{target}")
+        if target.exists() or target.is_symlink(): fail(f"挂载路径已存在：{target}")
+        mode=service["fetch_mode"]
+        if mode=="worktree":
+            if run("git","-C",str(source),"rev-parse","--verify","HEAD",check=False).returncode:
+                fail(f"服务 {service['id']} 的 worktree 模式要求 committed HEAD")
+            base=service["default_branch"]
+            if run("git","-C",str(source),"rev-parse","--verify",base,check=False).returncode:
+                fail(f"服务 {service['id']} 缺少声明的默认分支：{base}")
+        plans.append((service,source,target,mode))
+    created=[]
+    try:
+        for service,source,target,mode in plans:
+            target.parent.mkdir(parents=True,exist_ok=True)
+            if mode=="symlink": target.symlink_to(source,target_is_directory=True)
+            elif mode=="copy": shutil.copytree(source,target,ignore=shutil.ignore_patterns(".git"))
+            else:
+                branch="central/"+branch_slug(current_branch)+"-"+service["id"]
+                result=run(
+                    "git","-C",str(source),"worktree","add","-b",branch,str(target),
+                    service["default_branch"],check=False,
+                )
+                if result.returncode: fail(result.stderr.strip())
+            created.append((source,target,mode))
+            print(f"已初始化 {service['id']} ({service['access']}): {target}")
+    except BaseException:
+        for source,target,mode in reversed(created):
+            if mode=="worktree": subprocess.run(["git","-C",str(source),"worktree","remove","--force",str(target)],capture_output=True)
+            elif target.is_symlink(): target.unlink(missing_ok=True)
+            else: shutil.rmtree(target,ignore_errors=True)
+        raise
+def status():
+    data=config()
+    for service in data["services"]:
+        target=ROOT/service["mount_path"]; state="mounted" if target.exists() or target.is_symlink() else "missing"
+        print(f"{service['id']}\t{service['access']}\t{service['fetch_mode']}\t{state}\t{service['mount_path']}")
+def main():
+    p=argparse.ArgumentParser(); sub=p.add_subparsers(dest="command",required=True)
+    q=sub.add_parser("create"); q.add_argument("branch")
+    q=sub.add_parser("remove"); q.add_argument("branch")
+    q=sub.add_parser("init"); q.add_argument("--services",required=True)
+    sub.add_parser("status"); a=p.parse_args()
+    if a.command=="create": create(a.branch)
+    elif a.command=="remove": remove(a.branch)
+    elif a.command=="init": init_services(a.services)
+    else: status()
+    return 0
+if __name__=="__main__": raise SystemExit(main())

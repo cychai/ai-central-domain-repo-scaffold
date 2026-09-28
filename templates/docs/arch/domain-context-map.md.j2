@@ -1,0 +1,10 @@
+# {{ domain.name }}领域上下文图
+
+```text
+{{ domain.repository }}
+{% for service in services -%}
+  -> {{ service.mount_path }} [{{ service.access }}]
+{% endfor %}
+```
+
+调用关系必须由代码、Trace 或 Owner 证据确认；本图只表达仓库管理边界。

@@ -1,0 +1,7 @@
+# 服务仓 Worktree 指引
+
+- `worktree`：隔离需求分支，要求源仓有 committed HEAD。
+- `symlink`：复用现有 checkout，可看到未提交改动，但不隔离分支。
+- `copy`：教学副本，不包含 Git 历史。
+
+本地源路径通过 `CENTRAL_SERVICE_<ID>_PATH` 提供。模式不自动降级；失败时修复根因后重试。
