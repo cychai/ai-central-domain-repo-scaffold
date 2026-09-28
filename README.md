@@ -35,7 +35,7 @@ make install BOOTSTRAP_PYTHON=/path/to/python3.11
 .venv/bin/python -m central_repo_scaffold create --config examples/domain.yaml --output /tmp/order-domain
 ```
 
-也可以直接生成完整示例：
+也可以直接生成[完整示例](https://github.com/cychai/ai-central-domain-example)：
 
 ```bash
 make example OUTPUT=/tmp/order-fulfillment-central-domain
@@ -48,3 +48,4 @@ make example OUTPUT=/tmp/order-fulfillment-central-domain
 - 本地服务仓路径只通过环境变量提供，不进入版本控制。
 - 不修改全局 Git 配置；Git 身份缺失时明确失败。
 - 服务验证命令不会在生成阶段自动执行，初始状态为 `not-executed`。
+
